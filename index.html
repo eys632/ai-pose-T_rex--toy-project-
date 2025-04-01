@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>MoveNet 자세 인식 → 다이노 제어</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+  <style>
+    video, canvas {
+      position: absolute;
+      top: 150px;
+      left: 0px;
+    }
+    iframe {
+      position: relative;
+      top: 600px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔥 MoveNet 자세 인식 → 크롬 다이노 제어</h1>
+  <p>왼팔을 들면 점프(⬆), 오른팔을 들면 앉기(⬇)</p>
+
+  <video id="video" width="400" height="400" autoplay muted playsinline></video>
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <iframe id="dino-game" src="dino-game.html" width="600" height="150"></iframe>
+
+  <script>
+    let detector, video, canvas, ctx;
+    let jumpCooldown = false;
+    let duckCooldown = false;
+
+    async function init() {
+      const detectorConfig = {
+        modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+      };
+      detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+
+      video = document.getElementById("video");
+      canvas = document.getElementById("canvas");
+      ctx = canvas.getContext("2d");
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      video.onloadedmetadata = () => {
+        video.play();
+        runDetection();
+      };
+    }
+
+    async function runDetection() {
+      const poses = await detector.estimatePoses(video);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (poses.length > 0) {
+        const keypoints = poses[0].keypoints;
+
+        const leftWrist = keypoints.find(k => k.name === "left_wrist");
+        const leftShoulder = keypoints.find(k => k.name === "left_shoulder");
+        const rightWrist = keypoints.find(k => k.name === "right_wrist");
+        const rightShoulder = keypoints.find(k => k.name === "right_shoulder");
+
+        if (leftWrist && leftShoulder && leftWrist.y < leftShoulder.y - 30 && !jumpCooldown) {
+          console.log("⬆️ 점프 인식 (스페이스)");
+          triggerKeyEvent(32); // 스페이스바
+          jumpCooldown = true;
+          setTimeout(() => { jumpCooldown = false; }, 1000);
+        }
+
+        if (rightWrist && rightShoulder) {
+          if (rightWrist.y < rightShoulder.y - 30 && !duckCooldown) {
+            console.log("➡️ 앉기 인식 (↓ keydown)");
+            triggerKeyEvent(40); // ↓ 키
+            duckCooldown = true;
+          } else if (rightWrist.y >= rightShoulder.y - 30 && duckCooldown) {
+            console.log("⬆️ 일어서기 인식 (↓ keyup)");
+            triggerKeyUpEvent(40); // ↓ 키 뗌
+            duckCooldown = false;
+          }
+        }
+
+        drawKeypoints(keypoints);
+      }
+
+      requestAnimationFrame(runDetection);
+    }
+
+    function drawKeypoints(keypoints) {
+      for (const kp of keypoints) {
+        if (kp.score > 0.5) {
+          const adjustedX = kp.x - 30;
+          ctx.beginPath();
+          ctx.arc(adjustedX, kp.y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = "red";
+          ctx.fill();
+        }
+      }
+    }
+
+    function triggerKeyEvent(keyCode) {
+      const iframe = document.getElementById("dino-game");
+      const iframeWindow = iframe.contentWindow;
+
+      const event = new KeyboardEvent("keydown", {
+        keyCode: keyCode,
+        which: keyCode,
+        bubbles: true
+      });
+
+      iframeWindow.document.dispatchEvent(event);
+    }
+
+    function triggerKeyUpEvent(keyCode) {
+      const iframe = document.getElementById("dino-game");
+      const iframeWindow = iframe.contentWindow;
+
+      const event = new KeyboardEvent("keyup", {
+        keyCode: keyCode,
+        which: keyCode,
+        bubbles: true
+      });
+
+      iframeWindow.document.dispatchEvent(event);
+    }
+
+    init();
+  </script>
+</body>
+</html>
