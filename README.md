@@ -24,27 +24,23 @@ TensorFlow.js 기반의 실시간 포즈 인식 모델을 활용해, 팔 동작�
 
 ## 🚀 실행 방법
 
+VS 코드에서 실행
 1. VS Code에서 해당 폴더 열기  
 2. `Live Server` 확장 프로그램 설치 (이미 설치되어 있다면 건너뛰기)  
 3. `index.html`을 열고, 마우스 오른쪽 클릭 → **"Live Server로 열기"** 선택  
 4. 초기화면에서 "게임 시작" 버튼을 누르면 `dino-game.html`이 열리며 게임이 시작됩니다.
 
-(
-### 1. `dino` 폴더를 바탕화면에 옮기기
-> 예시 경로: `C:\Users\사용자이름\Desktop\dino`
-
-### 2. 명령 프롬프트(cmd) 열기
-
-- **윈도우 키 + R** → `cmd` 입력 후 Enter
-
-### 3. 해당 폴더로 이동하기
-
-```bash
-cd Desktop\dino
-python -m http.server
-```
-웹 주소창에 http://localhost:8000/ 입력
-)
+cmd로 실행
+1. `dino` 폴더를 바탕화면에 옮기기
+  > 예시 경로: `C:\Users\사용자이름\Desktop\dino`
+2. 명령 프롬프트(cmd) 열기
+  - **윈도우 키 + R** → `cmd` 입력 후 Enter
+3. 해당 폴더로 이동하기
+  ```bash
+  cd Desktop\dino
+  python -m http.server
+  ```
+4. 웹 주소창에 http://localhost:8000/ 입력
 
 ## 🎮 주요 기능
 
